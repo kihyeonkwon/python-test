@@ -2,6 +2,8 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
+from django.contrib.auth.decorators import login_required
+
 from todo.models import Todo
 
 
@@ -17,10 +19,11 @@ def index(request):
         return HttpResponse("Invalid request method", status=405)
 
 
+@login_required(login_url="/user/login/")
 @csrf_exempt
 def create(request):
     if request.method == "POST":
-        Todo.objects.create(content=request.POST["content"])
+        Todo.objects.create(content=request.POST["content"], user=request.user)
         return redirect("/todo/")
     elif request.method == "GET":
         return render(request, "todo/create.html")
@@ -40,8 +43,11 @@ def read(request, todo_id):
 def delete(request, todo_id):
     if request.method == "POST":
         todo = Todo.objects.get(id=todo_id)
-        todo.delete()
-        return redirect("/todo/")
+        if request.user == todo.user:
+            todo.delete()
+            return redirect("/todo/")
+        else:
+            return HttpResponse("You are not allowed to delete this todo", status=403)
     else:
         return HttpResponse("Invalid request method", status=405)
 
@@ -50,10 +56,13 @@ def delete(request, todo_id):
 def update(request, todo_id):
     if request.method == "POST":
         # 수정하기 만들어야 됨
-        todo = Todo.objects.get(id=todo_id)
-        todo.content = request.POST["content"]
-        todo.save()
-        return redirect(f"/todo/{todo_id}/")
+        if request.user == todo.user:
+            todo = Todo.objects.get(id=todo_id)
+            todo.content = request.POST["content"]
+            todo.save()
+            return redirect(f"/todo/{todo_id}/")
+        else:
+            return HttpResponse("You are not allowed to delete this todo", status=403)
 
     elif request.method == "GET":
         todo = Todo.objects.get(id=todo_id)
