@@ -14,6 +14,11 @@
         {% csrf_token %}
         <button>삭제하기</button>
       </form>
+
+      <a href="/todo/update/{{todo.id}}/">
+        <button>수정하기</button>
+      </a>
+
       <a href="/todo/">
         <button>뒤돌아가기</button>
       </a>
